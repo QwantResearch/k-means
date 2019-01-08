@@ -48,6 +48,7 @@ DataFrame k_means(const DataFrame& data,
 
   std::vector<size_t> assignments(data.size());
   for (size_t iteration = 0; iteration < number_of_iterations; ++iteration) {
+    std::cerr << "." ;
     // Find assignments.
     for (size_t point = 0; point < data.size(); ++point) {
       auto best_distance = std::numeric_limits<float>::max();
@@ -62,14 +63,18 @@ DataFrame k_means(const DataFrame& data,
       }
       assignments[point] = best_cluster;
     }
+    std::cerr << std::endl;
 
     // Sum up and count points for each cluster.
     DataFrame new_means(k);
     std::vector<size_t> counts(k, 0);
     for (size_t point = 0; point < data.size(); ++point) {
       const auto cluster = assignments[point];
-      new_means[cluster].x += data[point].x;
-      new_means[cluster].y += data[point].y;
+      for (int inc = 0; inc < (int)new_means[cluster].size(); inc++)
+      {
+          new_means[cluster].at(inc) += data[point].at(inc);
+//       new_means[cluster].y += data[point].y;
+      }
       counts[cluster] += 1;
     }
 
@@ -77,8 +82,13 @@ DataFrame k_means(const DataFrame& data,
     for (size_t cluster = 0; cluster < k; ++cluster) {
       // Turn 0/0 into 0/1 to avoid zero division.
       const auto count = std::max<size_t>(1, counts[cluster]);
-      means[cluster].x = new_means[cluster].x / count;
-      means[cluster].y = new_means[cluster].y / count;
+      for (int inc = 0; inc < (int)new_means[cluster].size(); inc++)
+      {
+          means[cluster].at(inc) = new_means[cluster].at(inc) / count;
+//       new_means[cluster].y += data[point].y;
+      }
+//       means[cluster].x = new_means[cluster].x / count;
+//       means[cluster].y = new_means[cluster].y / count;
     }
   }
 
@@ -120,6 +130,7 @@ int main(int argc, const char* argv[]) {
   DataFrame means;
   double total_elapsed = 0;
   for (int run = 0; run < number_of_runs; ++run) {
+    std::cerr << "Run number: " << run << std::endl;
     const auto start = std::chrono::high_resolution_clock::now();
     means = k_means(data, k, iterations);
     const auto end = std::chrono::high_resolution_clock::now();
@@ -130,7 +141,12 @@ int main(int argc, const char* argv[]) {
   std::cerr << "Took: " << total_elapsed / number_of_runs << "s ("
             << number_of_runs << " runs)" << std::endl;
 
-  for (auto& mean : means) {
-    std::cout << mean.x << " " << mean.y << std::endl;
+  for (auto& mean : means) 
+  {
+      for (int inc = 0; inc < (int)mean.size(); inc++)
+      {
+          std::cout << mean.at(inc) << " ";
+      }
+      std::cout << std::endl;
   }
 }
