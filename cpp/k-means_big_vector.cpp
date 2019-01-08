@@ -63,7 +63,6 @@ DataFrame k_means(const DataFrame& data,
       }
       assignments[point] = best_cluster;
     }
-    std::cerr << std::endl;
 
     // Sum up and count points for each cluster.
     DataFrame new_means(k);
@@ -92,6 +91,7 @@ DataFrame k_means(const DataFrame& data,
     }
   }
 
+    std::cerr << std::endl;
   return means;
 }
 
