@@ -132,10 +132,15 @@ int main(int argc, const char* argv[]) {
     std::exit(EXIT_FAILURE);
   }
   std::string line;
+  long l_input_cpt=0;
   while (std::getline(stream, line)) {
     Point point;
     std::istringstream line_stream(line);
     size_t label;
+    l_input_cpt++;
+    if (l_input_cpt % 10000 == 0) std::cerr << ".";
+    if (l_input_cpt % 100000 == 0) std::cerr << "(" << l_input_cpt << ")";
+
     for (int inc = 0; inc < size_vector ; inc++)
     {
       float datapoint=0.0;
@@ -144,6 +149,7 @@ int main(int argc, const char* argv[]) {
     }
     data.push_back(point);
   }
+  std::cerr << std::endl;
 
   DataFrame means;
   double total_elapsed = 0;
