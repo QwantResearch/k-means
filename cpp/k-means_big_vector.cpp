@@ -30,9 +30,9 @@ float squared_l2_distance(Point first, Point second) {
     }
   return sum;
 }
-std::vector<size_t> k_means_classif(const DataFrame& data, const DataFrame& mean)
+std::vector < std::pair < size_t,float > > k_means_classif(const DataFrame& data, const DataFrame& mean)
 {
-    std::vector<size_t> to_return;
+    std::vector < std::pair < size_t,float > > to_return;
     for (size_t point = 0; point < data.size(); point++) 
     {
         float best_distance = 1000.0;
@@ -47,7 +47,8 @@ std::vector<size_t> k_means_classif(const DataFrame& data, const DataFrame& mean
                 best_cluster = cluster;
             }
         }
-        to_return.push_back(best_cluster);
+        std::pair < size_t,float > p(best_cluster,best_distance); 
+        to_return.push_back(p);
     } 
     return to_return;
 }
@@ -116,19 +117,19 @@ DataFrame k_means(const DataFrame& data,
 
 int main(int argc, const char* argv[]) {
   if (argc < 3) {
-    std::cerr << "usage: k_means <data-file> <cluster-output-file> <data-clustered-output-file> <k> <vector-size> [iterations] [runs]"
-              << std::endl;
+    std::cerr << "usage: "<< std::endl << "Determine the cluster:  k_means find <data-file> <cluster-output-file> <data-clustered-output-file> <k> <vector-size> [iterations] [runs]"
+              << std::endl << "Apply the cluster:  k_means apply <data-file> <cluster-list> <data-clustered-output-file> <k> <vector-size> [iterations] [runs]" ;
     std::exit(EXIT_FAILURE);
   }
-
-  const auto k = std::atoi(argv[4]);
-  const auto size_vector = std::atoi(argv[5]);
-  const auto iterations = (argc >= 7) ? std::atoi(argv[6]) : 300;
-  const auto number_of_runs = (argc >= 8) ? std::atoi(argv[7]) : 10;
+  const std::string task(argv[1]);
+  const auto k = std::atoi(argv[5]);
+  const auto size_vector = std::atoi(argv[6]);
+  const auto iterations = (argc >= 8) ? std::atoi(argv[7]) : 300;
+  const auto number_of_runs = (argc >= 9) ? std::atoi(argv[8]) : 10;
   DataFrame data;
-  std::ifstream stream(argv[1]);
+  std::ifstream stream(argv[2]);
   if (!stream) {
-    std::cerr << "Could not open file: " << argv[1] << std::endl;
+    std::cerr << "Could not open file: " << argv[2] << std::endl;
     std::exit(EXIT_FAILURE);
   }
   std::string line;
@@ -150,46 +151,74 @@ int main(int argc, const char* argv[]) {
     data.push_back(point);
   }
   std::cerr << std::endl;
-
   DataFrame means;
-  double total_elapsed = 0;
-  for (int run = 0; run < number_of_runs; ++run) {
-    std::cerr << "Run number: " << run << std::endl;
-    const auto start = std::chrono::high_resolution_clock::now();
-    means = k_means(data, k, iterations);
-    const auto end = std::chrono::high_resolution_clock::now();
-    const auto duration =
-        std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-    total_elapsed += duration.count();
-  }
-  std::cerr << "Took: " << total_elapsed / number_of_runs << "s ("
-            << number_of_runs << " runs)" << std::endl;
 
-  std::ofstream ocstream(argv[2]);
-  if (!ocstream) {
-    std::cerr << "Could not open file: " << argv[2] << std::endl;
-    std::exit(EXIT_FAILURE);
-  }
-  
-  for (auto& mean : means) 
+  if (task.compare("find") == 0)
   {
-      for (int inc = 0; inc < (int)mean.size(); inc++)
-      {
-          ocstream << mean.at(inc) << " ";
+      double total_elapsed = 0;
+      for (int run = 0; run < number_of_runs; ++run) {
+        std::cerr << "Run number: " << run << std::endl;
+        const auto start = std::chrono::high_resolution_clock::now();
+        means = k_means(data, k, iterations);
+        const auto end = std::chrono::high_resolution_clock::now();
+        const auto duration =
+            std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
+        total_elapsed += duration.count();
       }
-      ocstream << std::endl;
+      std::cerr << "Took: " << total_elapsed / number_of_runs << "s ("
+                << number_of_runs << " runs)" << std::endl;
+
+      std::ofstream ocstream(argv[3]);
+      if (!ocstream) {
+        std::cerr << "Could not open file: " << argv[3] << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+      
+      for (auto& mean : means) 
+      {
+          for (int inc = 0; inc < (int)mean.size(); inc++)
+          {
+              ocstream << mean.at(inc) << " ";
+          }
+          ocstream << std::endl;
+      }
+      ocstream.close();
   }
-  ocstream.close();
-  
-  std::vector <size_t> classifs = k_means_classif(data,means);
-  std::ofstream odstream(argv[3]);
+  else if (task.compare("apply") == 0)
+  {
+      std::ifstream icstream(argv[3]);
+      if (!icstream) {
+        std::cerr << "Could not open file: " << argv[3] << std::endl;
+        std::exit(EXIT_FAILURE);
+      }
+      std::string line;
+      long l_input_cpt=0;
+      while (std::getline(icstream, line)) {
+        Point point;
+        std::istringstream line_stream(line);
+        l_input_cpt++;
+        for (int inc = 0; inc < size_vector ; inc++)
+        {
+          float datapoint=0.0;
+          line_stream >> datapoint;
+          point.push_back(datapoint);
+        }
+        means.push_back(point);
+      }
+  }
+  else
+  {
+      std::cerr << "Task not recognised" << std::endl;
+  }
+  std::vector < std::pair < size_t,float > > classifs = k_means_classif(data,means);
+  std::ofstream odstream(argv[4]);
   if (!odstream) {
-    std::cerr << "Could not open file: " << argv[3] << std::endl;
+    std::cerr << "Could not open file: " << argv[4] << std::endl;
     std::exit(EXIT_FAILURE);
   }
   for (int inc = 0; inc < (int)classifs.size(); inc++)
   {
-      odstream << classifs.at(inc) << std::endl;
+      odstream << classifs.at(inc).first << "\t"<< classifs.at(inc).second << std::endl;
   }
   odstream.close();
 }
