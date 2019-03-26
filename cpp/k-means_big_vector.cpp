@@ -21,7 +21,7 @@ float square(float value) {
   return value * value;
 }
 
-float squared_l2_distance(Point first, Point second) {
+float squared_l2_distance(const Point& first, const Point& second) {
   int inc=0;
   float sum = 0.0;
   for (inc = 0 ; inc < (int)first.size() ; inc++)
